@@ -28,7 +28,7 @@ class WebSocketHandlers(private val contextMap: Map<String, SocketContext>) {
     }
 
     fun play(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         val noReplace = json.optBoolean("noReplace", false)
 
         if (noReplace && player.playingTrack != null) {
@@ -50,33 +50,33 @@ class WebSocketHandlers(private val contextMap: Map<String, SocketContext>) {
         player.play(track)
 
         val conn = context.getVoiceConnection(player.guildId.toLong())
-        context.getPlayer(json.getString("guildId")).provideTo(conn)
+        context.getPlayer(json.getLong("guildId")).provideTo(conn)
     }
 
     fun stop(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         player.stop()
     }
 
     fun pause(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         player.setPause(json.getBoolean("pause"))
         SocketServer.sendPlayerUpdate(context, player)
     }
 
     fun seek(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         player.seekTo(json.getLong("position"))
         SocketServer.sendPlayerUpdate(context, player)
     }
 
     fun volume(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         player.setVolume(json.getInt("volume"))
     }
 
     fun equalizer(context: SocketContext, json: JSONObject) {
-        val player = context.getPlayer(json.getString("guildId"))
+        val player = context.getPlayer(json.getLong("guildId"))
         val bands = json.getJSONArray("bands")
 
         for (i in 0 until bands.length()) {

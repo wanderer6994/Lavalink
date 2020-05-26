@@ -57,7 +57,7 @@ class SocketContext internal constructor(
     }
 
     //guildId <-> Player
-    val players = ConcurrentHashMap<String, Player>()
+    val players = ConcurrentHashMap<Long, Player>()
 
     @Volatile
     var sessionPaused = false
@@ -89,11 +89,11 @@ class SocketContext internal constructor(
         }
     }
 
-    internal fun getPlayer(guildId: String) = players.computeIfAbsent(guildId) {
+    internal fun getPlayer(guildId: Long) = players.computeIfAbsent(guildId) {
         Player(this, guildId, audioPlayerManager)
     }
 
-    internal fun getPlayers(): Map<String, Player> {
+    internal fun getPlayers(): Map<Long, Player> {
         return players
     }
 
@@ -110,10 +110,10 @@ class SocketContext internal constructor(
     }
 
     /**
-     * Disposes of a voice connection
+     * Disposes of a voice connection and player
      */
     fun destroy(guild: Long) {
-        players.remove(guild.toString())?.stop()
+        players.remove(guild)?.destroy()
         koe.destroyConnection(guild)
     }
 
@@ -172,7 +172,7 @@ class SocketContext internal constructor(
         log.info("Shutting down " + playingPlayers.size + " playing players.")
         executor.shutdown()
         playerUpdateService.shutdown()
-        players.values.forEach(Player::stop)
+        players.values.forEach { destroy(it.guildId) }
         koe.close()
     }
 

@@ -36,21 +36,41 @@ import moe.kyokobot.koe.VoiceConnection
 import moe.kyokobot.koe.media.OpusAudioFrameProvider
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import java.lang.IllegalStateException
+import java.time.Instant
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class Player(val socket: SocketContext, val guildId: String, audioPlayerManager: AudioPlayerManager) : AudioEventAdapter() {
-    private val player: AudioPlayer
+class Player(val socket: SocketContext, val guildId: Long, audioPlayerManager: AudioPlayerManager) : AudioEventAdapter() {
+    private val player: AudioPlayer = audioPlayerManager.createPlayer()
     val audioLossCounter = AudioLossCounter()
     private var lastFrame: AudioFrame? = null
-    private var myFuture: ScheduledFuture<*>? = null
+    private var playerUpdateFuture: ScheduledFuture<*>? = null
     private val equalizerFactory = EqualizerFactory()
     private var isEqualizerApplied = false
+    private var voiceConnection: VoiceConnection? = null
+
+    /**
+     * Either the time of instantiation or the last time a track was ended. Useful for cleanup.
+     */
+    var lastTimeActive: Instant = Instant.now()
+        private set
+
     fun play(track: AudioTrack?) {
         player.playTrack(track)
         sendPlayerUpdate(socket, this)
     }
 
+    /**
+     * Must only be invoked by [SocketContext.destroy]
+     */
+    fun destroy() {
+        player.destroy()
+    }
+
+    /**
+     * Stops the current track, without destroying the player
+     */
     fun stop() {
         player.stopTrack()
     }
@@ -60,13 +80,15 @@ class Player(val socket: SocketContext, val guildId: String, audioPlayerManager:
     }
 
     fun seekTo(position: Long) {
-        val track = player.playingTrack ?: throw RuntimeException("Can't seek when not playing anything")
+        val track = player.playingTrack ?: throw IllegalStateException("Can't seek when not playing anything")
         track.position = position
     }
 
     fun setVolume(volume: Int) {
         player.volume = volume
     }
+
+    val isVoiceConnected: Boolean get() = voiceConnection?.gatewayConnection?.isOpen == true
 
     fun setBandGain(band: Int, gain: Float) {
         log.debug("Setting band {}'s gain to {}", band, gain)
@@ -109,12 +131,12 @@ class Player(val socket: SocketContext, val guildId: String, audioPlayerManager:
         get() = player.playingTrack != null && !player.isPaused
 
     override fun onTrackEnd(player: AudioPlayer, track: AudioTrack, endReason: AudioTrackEndReason) {
-        myFuture!!.cancel(false)
+        playerUpdateFuture!!.cancel(false)
     }
 
     override fun onTrackStart(player: AudioPlayer, track: AudioTrack) {
-        if (myFuture == null || myFuture.isCancelled()) {
-            myFuture = socket.playerUpdateService.scheduleAtFixedRate({
+        if (playerUpdateFuture?.isCancelled != false) {
+            playerUpdateFuture = socket.playerUpdateService.scheduleAtFixedRate({
                 if (socket.sessionPaused) return@scheduleAtFixedRate
                 sendPlayerUpdate(socket, this)
             }, 0, 5, TimeUnit.SECONDS)
@@ -122,6 +144,7 @@ class Player(val socket: SocketContext, val guildId: String, audioPlayerManager:
     }
 
     fun provideTo(connection: VoiceConnection) {
+        voiceConnection = connection
         connection.setAudioSender(Provider(connection))
     }
 
@@ -147,7 +170,6 @@ class Player(val socket: SocketContext, val guildId: String, audioPlayerManager:
     }
 
     init {
-        player = audioPlayerManager.createPlayer()
         player.addListener(this)
         player.addListener(EventEmitter(audioPlayerManager, this))
         player.addListener(audioLossCounter)
