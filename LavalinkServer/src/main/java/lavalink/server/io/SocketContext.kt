@@ -49,7 +49,8 @@ class SocketContext internal constructor(
         private var session: WebSocketSession,
         private val socketServer: SocketServer,
         val userId: String,
-        private val koe: KoeClient
+        private val koe: KoeClient,
+        cleanupThreshold: Long
 ) {
 
     companion object {
@@ -80,6 +81,7 @@ class SocketContext internal constructor(
 
     init {
         executor.scheduleAtFixedRate(StatsTask(this, socketServer), 0, 1, TimeUnit.MINUTES)
+        executor.scheduleAtFixedRate(CleanupTask(this, cleanupThreshold), 0, 1, TimeUnit.MINUTES)
 
         playerUpdateService = Executors.newScheduledThreadPool(2) { r ->
             val thread = Thread(r)

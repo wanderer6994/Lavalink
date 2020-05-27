@@ -72,6 +72,12 @@ class SocketServer(
         val shardCount = Integer.parseInt(session.handshakeHeaders.getFirst("Num-Shards")!!)
         val userId = session.handshakeHeaders.getFirst("User-Id")!!
         val resumeKey = session.handshakeHeaders.getFirst("Resume-Key")
+        var cleanupThreshold = session.handshakeHeaders.getFirst("Cleanup-Threshold")?.toLong()
+
+        if (cleanupThreshold == null) {
+            log.info("Cleanup-Threshold header not specified. Defaulting to 600 (10 minutes)")
+            cleanupThreshold = 600
+        }
 
         shardCounts[userId] = shardCount
 
@@ -92,9 +98,11 @@ class SocketServer(
                 session,
                 this,
                 userId,
-                koe.newClient(userId.toLong())
+                koe.newClient(userId.toLong()),
+                cleanupThreshold
         )
-        log.info("Connection successfully established from " + session.remoteAddress!!)
+        log.info("Connection successfully established from {} with User-Agent: {}",
+                session.remoteAddress, session.handshakeHeaders.getFirst("User-Agent"))
     }
 
     override fun afterConnectionClosed(session: WebSocketSession?, status: CloseStatus?) {

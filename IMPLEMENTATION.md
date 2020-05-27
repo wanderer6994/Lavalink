@@ -45,6 +45,12 @@ Num-Shards: Total number of shards your bot is operating on
 User-Id: The user id of the bot you are playing music with
 ```
 
+Optional headers:
+```
+User-Agent: The name of your client
+Cleanup-Threshold: How many seconds a player needs to be inactive for before being cleaned. Default is 600.
+```
+
 ### Outgoing messages
 Provide an intercepted voice server update. This causes the server to connect to the voice channel.
 ```json
@@ -258,6 +264,20 @@ See the [Discord docs](https://discordapp.com/developers/docs/topics/opcodes-and
     "code": 4006,
     "reason": "Your session is no longer valid.",
     "byRemote": true
+}
+```
+
+#### Automatic cleanup
+Automatic cleanup of a player happens when all of these criteria are met:
+1. The player does not hold a track (Lavaplayer automatically discards unused tracks)
+2. We do not hold an active voice connection for this guild
+3. The player has not been used for a certain number of seconds. This number is set via the `Cleanup-Threshold` header upon connecting to Lavalink, and defaults to 600.
+
+Once Lavalink cleans up a player, this message is emitted:
+```json
+{
+    "op": "cleaned",
+    "guildId": "..."
 }
 ```
 
