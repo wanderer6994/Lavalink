@@ -132,6 +132,7 @@ class Player(val socket: SocketContext, val guildId: Long, audioPlayerManager: A
 
     override fun onTrackEnd(player: AudioPlayer, track: AudioTrack, endReason: AudioTrackEndReason) {
         playerUpdateFuture!!.cancel(false)
+        lastTimeActive = Instant.now()
     }
 
     override fun onTrackStart(player: AudioPlayer, track: AudioTrack) {
