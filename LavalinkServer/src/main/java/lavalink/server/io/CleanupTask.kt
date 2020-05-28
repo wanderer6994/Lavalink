@@ -22,7 +22,7 @@ class CleanupTask(private val context: SocketContext, private val thresholdSecs:
             it.lastTimeActive.isBefore(cutoff) && it.playingTrack == null && !it.isVoiceConnected
         }.map {
             try {
-                it.destroy()
+                context.destroy(it.guildId)
             } catch (e: Exception) {
                 log.error("Failed destroying track", e)
             }
