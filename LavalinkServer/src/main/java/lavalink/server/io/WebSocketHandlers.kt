@@ -86,7 +86,8 @@ class WebSocketHandlers(private val contextMap: Map<String, SocketContext>) {
     }
 
     fun destroy(context: SocketContext, json: JSONObject) {
-        context.destroy(json.getLong("guildId"))
+        // TODO context.destroy(json.getLong("guildId"))
+        context.players[json.getLong("guildId")]?.stop()
     }
 
     fun configureResuming(context: SocketContext, json: JSONObject) {
