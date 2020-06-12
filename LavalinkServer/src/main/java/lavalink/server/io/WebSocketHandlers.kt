@@ -49,7 +49,7 @@ class WebSocketHandlers(private val contextMap: Map<String, SocketContext>) {
 
         player.play(track)
 
-        val conn = context.getVoiceConnection(player.guildId.toLong())
+        val conn = context.getVoiceConnection(player.guildId)
         context.getPlayer(json.getLong("guildId")).provideTo(conn)
     }
 

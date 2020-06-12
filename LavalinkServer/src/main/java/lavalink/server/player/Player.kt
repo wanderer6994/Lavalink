@@ -55,6 +55,7 @@ class Player(val socket: SocketContext, val guildId: Long, audioPlayerManager: A
      */
     var lastTimeActive: Instant = Instant.now()
         private set
+    val guildIdString: String get() = guildId.toString()
 
     fun play(track: AudioTrack?) {
         player.playTrack(track)

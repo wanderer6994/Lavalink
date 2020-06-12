@@ -58,7 +58,7 @@ class SocketServer(
         fun sendPlayerUpdate(socketContext: SocketContext, player: Player) {
             val json = JSONObject()
             json.put("op", "playerUpdate")
-            json.put("guildId", player.guildId)
+            json.put("guildId", player.guildIdString)
             json.put("state", player.state)
 
             socketContext.send(json)
